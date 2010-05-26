@@ -22,14 +22,13 @@ package org.flixel
 		 */
 		public var visible:Boolean;
 		/**
-		 * If an object is dead, the functions that automate collisions will skip it (see <code>FlxG.overlapArrays()</code> and <code>FlxG.collideArrays()</code>).
+		 * Internal tracker for whether or not the object collides (see <code>solid</code>).
 		 */
-		public var solid:Boolean;
+		protected var _solid:Boolean;
 		/**
-		 * If an object is 'fixed' in space, it will not budge when it collides with a not-fixed object.
-		 * Fixed objects also shortcut out of updateMotion by default.
+		 * Internal tracker for whether an object will move/alter position after a collision (see <code>fixed</code>).
 		 */
-		public var fixed:Boolean;
+		protected var _fixed:Boolean;
 		
 		/**
 		 * The basic speed of this object.
@@ -175,6 +174,10 @@ package org.flixel
 		 * Flag for direction collision resolution.
 		 */
 		public var collideBottom:Boolean;
+		/**
+		 * Flag for whether the bounding box visuals need to be refreshed.
+		 */
+		static internal var _refreshBounds:Boolean;
 		
 		/**
 		 * Creates a new <code>FlxObject</code>.
@@ -191,8 +194,8 @@ package org.flixel
 			exists = true;
 			active = true;
 			visible = true;
-			solid = true;
-			fixed = false;
+			_solid = true;
+			_fixed = false;
 			moves = true;
 			
 			collideLeft = true;
@@ -240,6 +243,39 @@ package org.flixel
 		}
 		
 		/**
+		 * Set <code>solid</code> to true if you want to collide this object.
+		 */
+		public function get solid():Boolean
+		{
+			return _solid;
+		}
+		
+		/**
+		 * @private
+		 */
+		public function set solid(Solid:Boolean):void
+		{
+			_solid = Solid;
+		}
+		
+		/**
+		 * Set <code>fixed</code> to true if you want the object to stay in place during collisions.
+		 * Useful for levels and other environmental objects.
+		 */
+		public function get fixed():Boolean
+		{
+			return _fixed;
+		}
+		
+		/**
+		 * @private
+		 */
+		public function set fixed(Fixed:Boolean):void
+		{
+			_fixed = Fixed;
+		}
+		
+		/**
 		 * Called by <code>FlxObject.updateMotion()</code> and some constructors to
 		 * rebuild the basic collision data for this object.
 		 */
@@ -264,12 +300,16 @@ package org.flixel
 			if(!moves)
 				return;
 			
-			if(solid)
+			if(_solid)
 				refreshHulls();
-			
 			onFloor = false;
+			var vc:Number;
+
+			vc = (FlxU.computeVelocity(angularVelocity,angularAcceleration,angularDrag,maxAngular) - angularVelocity)/2;
+			angularVelocity += vc; 
+			angle += angularVelocity*FlxG.elapsed;
+			angularVelocity += vc;
 			
-			angle += (angularVelocity = FlxU.computeVelocity(angularVelocity,angularAcceleration,angularDrag,maxAngular))*FlxG.elapsed;
 			var thrustComponents:FlxPoint;
 			if(thrust != 0)
 			{
@@ -284,15 +324,22 @@ package org.flixel
 			}
 			else
 				thrustComponents = _pZero;
-			velocity.x = FlxU.computeVelocity(velocity.x,acceleration.x+thrustComponents.x,drag.x,maxVelocity.x);
-			velocity.y = FlxU.computeVelocity(velocity.y,acceleration.y+thrustComponents.y,drag.y,maxVelocity.y);
+			
+			vc = (FlxU.computeVelocity(velocity.x,acceleration.x+thrustComponents.x,drag.x,maxVelocity.x) - velocity.x)/2;
+			velocity.x += vc;
 			var xd:Number = velocity.x*FlxG.elapsed;
+			velocity.x += vc;
+			
+			vc = (FlxU.computeVelocity(velocity.y,acceleration.y+thrustComponents.y,drag.y,maxVelocity.y) - velocity.y)/2;
+			velocity.y += vc;
 			var yd:Number = velocity.y*FlxG.elapsed;
+			velocity.y += vc;
+			
 			x += xd;
 			y += yd;
 			
 			//Update collision data with new movement results
-			if(!solid)
+			if(!_solid)
 				return;
 			colVector.x = xd;
 			colVector.y = yd;
@@ -548,6 +595,22 @@ package org.flixel
 			y = Y;
 			exists = true;
 			dead = false;
+		}
+		
+		/**
+		 * Returns the appropriate color for the bounding box depending on object state.
+		 */
+		public function getBoundingColor():uint
+		{
+			if(solid)
+			{
+				if(fixed)
+					return 0x7f00f225;
+				else
+					return 0x7fff0012;
+			}
+			else
+				return 0x7f0090e9;
 		}
 	}
 }

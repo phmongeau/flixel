@@ -20,21 +20,22 @@ package org.flixel
 		/**
 		 * Creates a new <code>FlxText</code> object at the specified position.
 		 * 
-		 * @param	X		The X position of the text.
-		 * @param	Y		The Y position of the text.
-		 * @param	Width	The width of the text object (height is determined automatically).
-		 * @param	Text	The actual text you would like to display initially.
+		 * @param	X				The X position of the text.
+		 * @param	Y				The Y position of the text.
+		 * @param	Width			The width of the text object (height is determined automatically).
+		 * @param	Text			The actual text you would like to display initially.
+		 * @param	EmbeddedFont	Whether this text field uses embedded fonts or nto
 		 */
-		public function FlxText(X:Number, Y:Number, Width:uint, Text:String=null)
+		public function FlxText(X:Number, Y:Number, Width:uint, Text:String=null, EmbeddedFont:Boolean=true)
 		{
 			super(X,Y);
-			createGraphic(Width,1);
+			createGraphic(Width,1,0);
 			
 			if(Text == null)
 				Text = "";
 			_tf = new TextField();
 			_tf.width = Width;
-			_tf.embedFonts = true;
+			_tf.embedFonts = EmbeddedFont;
 			_tf.selectable = false;
 			_tf.sharpness = 100;
 			_tf.multiline = true;
@@ -62,7 +63,7 @@ package org.flixel
 		 * @param	Size		The size of the font (in pixels essentially).
 		 * @param	Color		The color of the text in traditional flash 0xRRGGBB format.
 		 * @param	Alignment	A string representing the desired alignment ("left,"right" or "center").
-		 * @param	ShadowColow	A uint representing the desired text shadow color in flash 0xRRGGBB format.
+		 * @param	ShadowColor	A uint representing the desired text shadow color in flash 0xRRGGBB format.
 		 * 
 		 * @return	This FlxText instance (nice for chaining stuff together, if you're into that).
 		 */
@@ -96,9 +97,13 @@ package org.flixel
 		 */
 		public function set text(Text:String):void
 		{
+			var ot:String = _tf.text;
 			_tf.text = Text;
-			_regen = true;
-			calcFrame();
+			if(_tf.text != ot)
+			{
+				_regen = true;
+				calcFrame();
+			}
 		}
 		
 		/**
@@ -206,12 +211,6 @@ package org.flixel
 		 */
 		override protected function calcFrame():void
 		{
-			//Just leave if there's no text to render
-			if((_tf == null) || (_tf.text == null) || (_tf.text.length <= 0))
-			{
-				_pixels.fillRect(_flashRect,0);
-				return;
-			}
 			if(_regen)
 			{
 				//Need to generate a new buffer to store the text graphic
@@ -221,6 +220,7 @@ package org.flixel
 					height += _tf.getLineMetrics(i).height;
 				height += 4; //account for 2px gutter on top and bottom
 				_pixels = new BitmapData(width,height,true,0);
+				_bbb = new BitmapData(width,height,true,0);
 				frameHeight = height;
 				_tf.height = height*1.2;				
 				_flashRect.x = 0;
@@ -232,31 +232,39 @@ package org.flixel
 			else	//Else just clear the old buffer before redrawing the text
 				_pixels.fillRect(_flashRect,0);
 			
-			//Now that we've cleared a buffer, we need to actually render the text to it
-			var tf:TextFormat = _tf.defaultTextFormat;
-			var tfa:TextFormat = tf;
-			_mtx.identity();
-			//If it's a single, centered line of text, we center it ourselves so it doesn't blur to hell
-			if((tf.align == "center") && (_tf.numLines == 1))
+			if((_tf != null) && (_tf.text != null) && (_tf.text.length > 0))
 			{
-				tfa = new TextFormat(tf.font,tf.size,tf.color,null,null,null,null,null,"left");
-				_tf.setTextFormat(tfa);				
-				_mtx.translate(Math.floor((width - _tf.getLineMetrics(0).width)/2),0);
-			}
-			//Render a single pixel shadow beneath the text
-			if(_shadow > 0)
-			{
-				_tf.setTextFormat(new TextFormat(tfa.font,tfa.size,_shadow,null,null,null,null,null,tfa.align));				
-				_mtx.translate(1,1);
+				//Now that we've cleared a buffer, we need to actually render the text to it
+				var tf:TextFormat = _tf.defaultTextFormat;
+				var tfa:TextFormat = tf;
+				_mtx.identity();
+				//If it's a single, centered line of text, we center it ourselves so it doesn't blur to hell
+				if((tf.align == "center") && (_tf.numLines == 1))
+				{
+					tfa = new TextFormat(tf.font,tf.size,tf.color,null,null,null,null,null,"left");
+					_tf.setTextFormat(tfa);				
+					_mtx.translate(Math.floor((width - _tf.getLineMetrics(0).width)/2),0);
+				}
+				//Render a single pixel shadow beneath the text
+				if(_shadow > 0)
+				{
+					_tf.setTextFormat(new TextFormat(tfa.font,tfa.size,_shadow,null,null,null,null,null,tfa.align));				
+					_mtx.translate(1,1);
+					_pixels.draw(_tf,_mtx,_ct);
+					_mtx.translate(-1,-1);
+					_tf.setTextFormat(new TextFormat(tfa.font,tfa.size,tfa.color,null,null,null,null,null,tfa.align));
+				}
+				//Actually draw the text onto the buffer
 				_pixels.draw(_tf,_mtx,_ct);
-				_mtx.translate(-1,-1);
-				_tf.setTextFormat(new TextFormat(tfa.font,tfa.size,tfa.color,null,null,null,null,null,tfa.align));
+				_tf.setTextFormat(new TextFormat(tf.font,tf.size,tf.color,null,null,null,null,null,tf.align));
 			}
-			//Actually draw the text onto the buffer
-			_pixels.draw(_tf,_mtx,_ct);
-			_tf.setTextFormat(new TextFormat(tf.font,tf.size,tf.color,null,null,null,null,null,tf.align));
-			_framePixels = new BitmapData(_pixels.width,_pixels.height,true,0);
+			
+			//Finally, update the visible pixels
+			if((_framePixels == null) || (_framePixels.width != _pixels.width) || (_framePixels.height != _pixels.height))
+				_framePixels = new BitmapData(_pixels.width,_pixels.height,true,0);
 			_framePixels.copyPixels(_pixels,_flashRect,_flashPointZero);
+			if(FlxG.showBounds)
+				drawBounds();
 			if(solid)
 				refreshHulls();
 		}

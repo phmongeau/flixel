@@ -1,6 +1,5 @@
 package org.flixel
 {
-	import flash.display.Bitmap;
 	import flash.display.BitmapData;
 	import flash.display.Stage;
 	import flash.geom.Matrix;
@@ -28,7 +27,7 @@ package org.flixel
 		 * Assign a minor version to your library.
 		 * Appears after the decimal in the console.
 		 */
-		static public var LIBRARY_MINOR_VERSION:uint = 23;
+		static public var LIBRARY_MINOR_VERSION:uint = 35;
 
 		/**
 		 * Internal tracker for game object (so we can pause & unpause)
@@ -43,11 +42,19 @@ package org.flixel
 		 * Set automatically by <code>FlxFactory</code> during startup.
 		 */
 		static public var debug:Boolean;
+		/**
+		 * Internal tracker for bounding box visibility.
+		 */
+		static protected var _showBounds:Boolean;
 		
 		/**
 		 * Represents the amount of time in seconds that passed since last frame.
 		 */
 		static public var elapsed:Number;
+		/**
+		 * Essentially locks the framerate to a minimum value - any slower and you'll get slowdown instead of frameskip; default is 1/30th of a second.
+		 */
+		static public var maxElapsed:Number;
 		/**
 		 * How fast or slow time should pass in the game; default is 1.0.
 		 */
@@ -201,6 +208,61 @@ package org.flixel
 					playSounds();
 				}
 			}
+		}
+		
+		/**
+		 * Set <code>showBounds</code> to true to display the bounding boxes of the in-game objects.
+		 */
+		static public function get showBounds():Boolean
+		{
+			return _showBounds;
+		}
+		
+		/**
+		 * @private
+		 */
+		static public function set showBounds(ShowBounds:Boolean):void
+		{
+			var osb:Boolean = _showBounds;
+			_showBounds = ShowBounds;
+			if(_showBounds != osb)
+				FlxObject._refreshBounds = true;
+		}
+		
+		/**
+		 * The game and SWF framerate; default is 60.
+		 */
+		static public function get framerate():uint
+		{
+			return _game._framerate;
+		}
+		
+		/**
+		 * @private
+		 */
+		static public function set framerate(Framerate:uint):void
+		{
+			_game._framerate = Framerate;
+			if(!_game._paused && (_game.stage != null))
+				_game.stage.frameRate = Framerate;
+		}
+		
+		/**
+		 * The game and SWF framerate while paused; default is 10.
+		 */
+		static public function get frameratePaused():uint
+		{
+			return _game._frameratePaused;
+		}
+		
+		/**
+		 * @private
+		 */
+		static public function set frameratePaused(Framerate:uint):void
+		{
+			_game._frameratePaused = Framerate;
+			if(_game._paused && (_game.stage != null))
+				_game.stage.frameRate = Framerate;
 		}
 		
 		/**
@@ -518,8 +580,8 @@ package org.flixel
 		{
 			followTarget = Target;
 			followLerp = Lerp;
-			_scrollTarget.x = (width>>1)-followTarget.x-(followTarget.width>>1)+(followTarget as FlxSprite).offset.x;
-			_scrollTarget.y = (height>>1)-followTarget.y-(followTarget.height>>1)+(followTarget as FlxSprite).offset.y;
+			_scrollTarget.x = (width>>1)-followTarget.x-(followTarget.width>>1);
+			_scrollTarget.y = (height>>1)-followTarget.y-(followTarget.height>>1);
 			scroll.x = _scrollTarget.x;
 			scroll.y = _scrollTarget.y;
 			doFollow();
@@ -555,7 +617,7 @@ package org.flixel
 			if(followMax.y > followMin.y)
 				followMax.y = followMin.y;
 			if(UpdateWorldBounds)
-				FlxU.setWorldBounds(-MinX,-MinY,-MinX+MaxX,-MinY+MaxY);
+				FlxU.setWorldBounds(MinX,MinY,MaxX-MinX,MaxY-MinY);
 			doFollow();
 		}
 		
@@ -612,13 +674,19 @@ package org.flixel
 			kong = null;
 			pause = false;
 			timeScale = 1.0;
+			framerate = 60;
+			frameratePaused = 10;
+			maxElapsed = 0.0333333;
+			FlxG.elapsed = 0;
+			_showBounds = false;
+			FlxObject._refreshBounds = false;
 			
 			panel = new FlxPanel();
 			quake = new FlxQuake(Zoom);
 			flash = new FlxFlash();
 			fade = new FlxFade();
 
-			FlxU.setWorldBounds();
+			FlxU.setWorldBounds(0,0,FlxG.width,FlxG.height);
 		}
 
 		/**
@@ -628,8 +696,8 @@ package org.flixel
 		{
 			if(followTarget != null)
 			{
-				_scrollTarget.x = (width>>1)-followTarget.x-(followTarget.width>>1)+(followTarget as FlxSprite).offset.x;
-				_scrollTarget.y = (height>>1)-followTarget.y-(followTarget.height>>1)+(followTarget as FlxSprite).offset.y;
+				_scrollTarget.x = (width>>1)-followTarget.x-(followTarget.width>>1);
+				_scrollTarget.y = (height>>1)-followTarget.y-(followTarget.height>>1);
 				if((followLead != null) && (followTarget is FlxSprite))
 				{
 					_scrollTarget.x -= (followTarget as FlxSprite).velocity.x*followLead.x;

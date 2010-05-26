@@ -47,6 +47,9 @@ package org.flixel
 				screen.createGraphic(FlxG.width,FlxG.height,0,true);
 				screen.origin.x = screen.origin.y = 0;
 				screen.antialiasing = true;
+				screen.exists = false;
+				screen.solid = false;
+				screen.fixed = true;
 			}
 		}
 		
@@ -95,7 +98,7 @@ package org.flixel
 		 */
 		public function collide():void
 		{
-			defaultGroup.collide();
+			FlxU.collide(defaultGroup,defaultGroup);
 		}
 		
 		/**
