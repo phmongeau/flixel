@@ -62,6 +62,16 @@ package org.flixel
 			return (N>0)?((n!=N)?(n+1):(n)):(n);
 		}
 		
+		static public function min(N1:Number,N2:Number):Number
+		{
+			return (N1 <= N2)?N1:N2;
+		}
+		
+		static public function max(N1:Number,N2:Number):Number
+		{
+			return (N1 >= N2)?N1:N2;
+		}
+		
 		/**
 		 * Generate a pseudo-random number.
 		 * 
@@ -136,11 +146,6 @@ package org.flixel
 		static public function startProfile():uint
 		{
 			return getTimer();
-			retur
-			_elapsed = (t-_total)/1000;
-			if(_created)
-				_console.lastElapsed = _elapsed;
-			_total = t;
 		}
 		
 		/**
@@ -448,11 +453,20 @@ package org.flixel
 							r2 = -obj1Hull.x - obj1Hull.width + Object1.colHullY.width;
 					}
 					overlap = r1 - r2;
+					
+					//Slightly smarter version of checking if objects are 'fixed' in space or not
+					f1 = Object1.fixed;
+					f2 = Object2.fixed;
+					if(f1 && f2)
+					{
+						f1 &&= (Object1.colVector.x == 0) && (o1 == 0);
+						f2 &&= (Object2.colVector.x == 0) && (o2 == 0);
+					}
 
 					//Last chance to skip out on a bogus collision resolution
 					if( (overlap == 0) ||
-						((!Object1.fixed && ((overlap>0)?overlap:-overlap) > obj1Hull.width*0.8)) ||
-						((!Object2.fixed && ((overlap>0)?overlap:-overlap) > obj2Hull.width*0.8)) )
+						((!f1 && ((overlap>0)?overlap:-overlap) > obj1Hull.width*0.8)) ||
+						((!f2 && ((overlap>0)?overlap:-overlap) > obj2Hull.width*0.8)) )
 					{
 						obj2Hull.x -= ox2;
 						obj2Hull.y -= oy2;
@@ -463,21 +477,21 @@ package org.flixel
 					//Adjust the objects according to their flags and stuff
 					sv1 = Object2.velocity.x;
 					sv2 = Object1.velocity.x;
-					if(!Object1.fixed && Object2.fixed)
+					if(!f1 && f2)
 					{
 						if(Object1._group)
 							Object1.reset(Object1.x - overlap,Object1.y);
 						else
 							Object1.x -= overlap;
 					}
-					else if(Object1.fixed && !Object2.fixed)
+					else if(f1 && !f2)
 					{
 						if(Object2._group)
 							Object2.reset(Object2.x + overlap,Object2.y);
 						else
 							Object2.x += overlap;
 					}
-					else if(!Object1.fixed && !Object2.fixed)
+					else if(!f1 && !f2)
 					{
 						overlap /= 2;
 						if(Object1._group)
@@ -503,7 +517,7 @@ package org.flixel
 					}
 					
 					//Adjust collision hulls if necessary
-					if(!Object1.fixed && (overlap != 0))
+					if(!f1 && (overlap != 0))
 					{
 						if(p1hn2)
 							obj1Hull.width -= overlap;
@@ -514,7 +528,7 @@ package org.flixel
 						}
 						Object1.colHullY.x -= overlap;
 					}
-					if(!Object2.fixed && (overlap != 0))
+					if(!f2 && (overlap != 0))
 					{
 						if(p1hn2)
 						{
@@ -555,6 +569,8 @@ package org.flixel
 			Object2.preCollide(Object1);
 			
 			//Basic resolution variables
+			var f1:Boolean;
+			var f2:Boolean;
 			var overlap:Number;
 			var hit:Boolean = false;
 			var p1hn2:Boolean;
@@ -644,10 +660,19 @@ package org.flixel
 					}
 					overlap = r1 - r2;
 					
+					//Slightly smarter version of checking if objects are 'fixed' in space or not
+					f1 = Object1.fixed;
+					f2 = Object2.fixed;
+					if(f1 && f2)
+					{
+						f1 &&= (Object1.colVector.x == 0) && (o1 == 0);
+						f2 &&= (Object2.colVector.x == 0) && (o2 == 0);
+					}
+					
 					//Last chance to skip out on a bogus collision resolution
 					if( (overlap == 0) ||
-						((!Object1.fixed && ((overlap>0)?overlap:-overlap) > obj1Hull.height*0.8)) ||
-						((!Object2.fixed && ((overlap>0)?overlap:-overlap) > obj2Hull.height*0.8)) )
+						((!f1 && ((overlap>0)?overlap:-overlap) > obj1Hull.height*0.8)) ||
+						((!f2 && ((overlap>0)?overlap:-overlap) > obj2Hull.height*0.8)) )
 					{
 						obj2Hull.x -= ox2;
 						obj2Hull.y -= oy2;
@@ -658,21 +683,21 @@ package org.flixel
 					//Adjust the objects according to their flags and stuff
 					sv1 = Object2.velocity.y;
 					sv2 = Object1.velocity.y;
-					if(!Object1.fixed && Object2.fixed)
+					if(!f1 && f2)
 					{
 						if(Object1._group)
 							Object1.reset(Object1.x, Object1.y - overlap);
 						else
 							Object1.y -= overlap;
 					}
-					else if(Object1.fixed && !Object2.fixed)
+					else if(f1 && !f2)
 					{
 						if(Object2._group)
 							Object2.reset(Object2.x, Object2.y + overlap);
 						else
 							Object2.y += overlap;
 					}
-					else if(!Object1.fixed && !Object2.fixed)
+					else if(!f1 && !f2)
 					{
 						overlap /= 2;
 						if(Object1._group)
@@ -698,14 +723,14 @@ package org.flixel
 					}
 					
 					//Adjust collision hulls if necessary
-					if(!Object1.fixed && (overlap != 0))
+					if(!f1 && (overlap != 0))
 					{
 						if(p1hn2)
 						{
 							obj1Hull.y -= overlap;
 							
 							//This code helps stuff ride horizontally moving platforms.
-							if(Object2.fixed && Object2.moves)
+							if(f2 && Object2.moves)
 							{
 								sv1 = Object2.colVector.x;
 								Object1.x += sv1;
@@ -719,7 +744,7 @@ package org.flixel
 							obj1Hull.height += overlap;
 						}
 					}
-					if(!Object2.fixed && (overlap != 0))
+					if(!f2 && (overlap != 0))
 					{
 						if(p1hn2)
 						{
@@ -731,7 +756,7 @@ package org.flixel
 							obj2Hull.height += overlap;
 						
 							//This code helps stuff ride horizontally moving platforms.
-							if(Object1.fixed && Object1.moves)
+							if(f1 && Object1.moves)
 							{
 								sv2 = Object1.colVector.x;
 								Object2.x += sv2;

@@ -174,10 +174,6 @@ package org.flixel
 		 * Flag for direction collision resolution.
 		 */
 		public var collideBottom:Boolean;
-		/**
-		 * Flag for whether the bounding box visuals need to be refreshed.
-		 */
-		static internal var _refreshBounds:Boolean;
 		
 		/**
 		 * Creates a new <code>FlxObject</code>.
@@ -405,26 +401,8 @@ package org.flixel
 			getScreenXY(_point);
 			var tx:Number = _point.x;
 			var ty:Number = _point.y;
-			var tw:Number = width;
-			var th:Number = height;
-			if(this is FlxSprite)
-			{
-				var ts:FlxSprite = this as FlxSprite;
-				tw = ts.frameWidth;
-				th = ts.frameHeight;
-			}
 			Object.getScreenXY(_point);
-			var ox:Number = _point.x;
-			var oy:Number = _point.y;
-			var ow:Number = Object.width;
-			var oh:Number = Object.height;
-			if(Object is FlxSprite)
-			{
-				var os:FlxSprite = Object as FlxSprite;
-				ow = os.frameWidth;
-				oh = os.frameHeight;
-			}
-			if((ox <= tx-ow) || (ox >= tx+tw) || (oy <= ty-oh) || (oy >= ty+th))
+			if((_point.x <= tx-Object.width) || (_point.x >= tx+width) || (_point.y <= ty-Object.height) || (_point.y >= ty+height))
 				return false;
 			return true;
 		}
@@ -440,8 +418,8 @@ package org.flixel
 		 */
 		public function overlapsPoint(X:Number,Y:Number,PerPixel:Boolean = false):Boolean
 		{
-			X += FlxU.floor(FlxG.scroll.x);
-			Y += FlxU.floor(FlxG.scroll.y);
+			X -= FlxU.floor(FlxG.scroll.x);
+			Y -= FlxU.floor(FlxG.scroll.y);
 			getScreenXY(_point);
 			if((X <= _point.x) || (X >= _point.x+width) || (Y <= _point.y) || (Y >= _point.y+height))
 				return false;
@@ -480,7 +458,7 @@ package org.flixel
 		 */
 		public function hitLeft(Contact:FlxObject,Velocity:Number):void
 		{
-			if(!fixed)
+			if(!fixed || (Contact.fixed && ((velocity.y != 0) || (velocity.x != 0))))
 				velocity.x = Velocity;
 		}
 		
@@ -503,7 +481,7 @@ package org.flixel
 		 */
 		public function hitTop(Contact:FlxObject,Velocity:Number):void
 		{
-			if(!fixed)
+			if(!fixed || (Contact.fixed && ((velocity.y != 0) || (velocity.x != 0))))
 				velocity.y = Velocity;
 		}
 		
@@ -516,7 +494,7 @@ package org.flixel
 		public function hitBottom(Contact:FlxObject,Velocity:Number):void
 		{
 			onFloor = true;
-			if(!fixed)
+			if(!fixed || (Contact.fixed && ((velocity.y != 0) || (velocity.x != 0))))
 				velocity.y = Velocity;
 		}
 		
