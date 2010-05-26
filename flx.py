@@ -17,6 +17,8 @@ if len(sys.argv) <= 1:
 	sys.exit(0)
 project = sys.argv[1]
 
+os.system('mkdir' + project) # Create the project directory
+
 #Generate basic game class
 filename = project+'/'+src+project+'.as';
 try:
