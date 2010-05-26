@@ -3,12 +3,12 @@ import os
 import sys
 
 #BASIC SCRIPT PRESETS
-width = 320					# Width of your game in 'true' pixels (ignoring zoom)
-height = 240				# Height of your game in 'true' pixels
-zoom = 2					# How chunky you want your pixels
-src = 'src/'				# Name of the source folder under the project folder (if there is one!)
+width = 640					# Width of your game in 'true' pixels (ignoring zoom)
+height = 480				# Height of your game in 'true' pixels
+zoom = 1					# How chunky you want your pixels
+src = ''				# Name of the source folder under the project folder (if there is one!)
 preloader = 'Preloader'		# Name of the preloader class
-flexBuilder = True			# Whether or not to generate a Default.css file
+flexBuilder = False			# Whether or not to generate a Default.css file
 menuState = 'MenuState'		# Name of menu state class
 playState = 'PlayState'		# Name of play state class
 
