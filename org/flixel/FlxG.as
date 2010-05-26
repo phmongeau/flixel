@@ -27,7 +27,7 @@ package org.flixel
 		 * Assign a minor version to your library.
 		 * Appears after the decimal in the console.
 		 */
-		static public var LIBRARY_MINOR_VERSION:uint = 35;
+		static public var LIBRARY_MINOR_VERSION:uint = 37;
 
 		/**
 		 * Internal tracker for game object (so we can pause & unpause)
@@ -43,9 +43,9 @@ package org.flixel
 		 */
 		static public var debug:Boolean;
 		/**
-		 * Internal tracker for bounding box visibility.
+		 * Set <code>showBounds</code> to true to display the bounding boxes of the in-game objects.
 		 */
-		static protected var _showBounds:Boolean;
+		static public var showBounds:Boolean;
 		
 		/**
 		 * Represents the amount of time in seconds that passed since last frame.
@@ -90,6 +90,10 @@ package org.flixel
 		 * A reference to a <code>FlxKeyboard</code> object.  Important for input!
 		 */
 		static public var keys:FlxKeyboard;
+		/**
+		 * An array of <code>FlxGamepad</code> objects.  Important for input!
+		 */
+		static public var gamepads:Array;
 		
 		/**
 		 * A handy container for a background music object.
@@ -211,25 +215,6 @@ package org.flixel
 		}
 		
 		/**
-		 * Set <code>showBounds</code> to true to display the bounding boxes of the in-game objects.
-		 */
-		static public function get showBounds():Boolean
-		{
-			return _showBounds;
-		}
-		
-		/**
-		 * @private
-		 */
-		static public function set showBounds(ShowBounds:Boolean):void
-		{
-			var osb:Boolean = _showBounds;
-			_showBounds = ShowBounds;
-			if(_showBounds != osb)
-				FlxObject._refreshBounds = true;
-		}
-		
-		/**
 		 * The game and SWF framerate; default is 60.
 		 */
 		static public function get framerate():uint
@@ -272,6 +257,8 @@ package org.flixel
 		{
 			keys.reset();
 			mouse.reset();
+			for(var i:uint = 0; i < gamepads.length; i++)
+				gamepads[i].reset();
 		}
 		
 		/**
@@ -648,6 +635,26 @@ package org.flixel
 		{
 			_game.switchState(State);
 		}
+		
+		/**
+		 * Stops and resets the camera.
+		 */
+		static public function unfollow():void
+		{
+			followTarget = null;
+			followLead = null;
+			followLerp = 1;
+			followMin = null;
+			followMax = null;
+			if(scroll == null)
+				scroll = new Point();
+			else
+				scroll.x = scroll.y = 0;
+			if(_scrollTarget == null)
+				_scrollTarget = new Point();
+			else
+				_scrollTarget.x = _scrollTarget.y = 0;
+		}
 
 		/**
 		 * Called by <code>FlxGame</code> to set up <code>FlxG</code> during <code>FlxGame</code>'s constructor.
@@ -663,6 +670,11 @@ package org.flixel
 			sounds = new Array();
 			mouse = new FlxMouse();
 			keys = new FlxKeyboard();
+			gamepads = new Array(4);
+			gamepads[0] = new FlxGamepad();
+			gamepads[1] = new FlxGamepad();
+			gamepads[2] = new FlxGamepad();
+			gamepads[3] = new FlxGamepad();
 			scroll = null;
 			_scrollTarget = null;
 			unfollow();
@@ -678,8 +690,7 @@ package org.flixel
 			frameratePaused = 10;
 			maxElapsed = 0.0333333;
 			FlxG.elapsed = 0;
-			_showBounds = false;
-			FlxObject._refreshBounds = false;
+			showBounds = false;
 			
 			panel = new FlxPanel();
 			quake = new FlxQuake(Zoom);
@@ -725,32 +736,14 @@ package org.flixel
 		}
 		
 		/**
-		 * Stops and resets the camera.
-		 */
-		static internal function unfollow():void
-		{
-			followTarget = null;
-			followLead = null;
-			followLerp = 1;
-			followMin = null;
-			followMax = null;
-			if(scroll == null)
-				scroll = new Point();
-			else
-				scroll.x = scroll.y = 0;
-			if(_scrollTarget == null)
-				_scrollTarget = new Point();
-			else
-				_scrollTarget.x = _scrollTarget.y = 0;
-		}
-		
-		/**
 		 * Calls update on the keyboard and mouse input tracking objects.
 		 */
 		static internal function updateInput():void
 		{
 			keys.update();
 			mouse.update(state.mouseX,state.mouseY,scroll.x,scroll.y);
+			for(var i:uint = 0; i < gamepads.length; i++)
+				gamepads[i].update();
 		}
 	}
 }
